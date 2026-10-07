@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct {
+    char word[31];
+    int id;
+} WordMap;
+
+int compareStrings(const void* a, const void* b) {
+    return strcmp(((WordMap*)a)->word, ((WordMap*)b)->word);
+}
+
+
+int getWordId(const char* s, int start, int len, WordMap* uniqueWords, int uniqueCount) {
+    int low = 0, high = uniqueCount - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        int cmp = strncmp(s + start, uniqueWords[mid].word, len);
+        if (cmp == 0) return uniqueWords[mid].id;
+        if (cmp < 0) high = mid - 1;
+        else low = mid + 1;
+    }
+    return -1; 
+}
+
+int* findSubstring(char* s, char** words, int wordsSize, int* returnSize) {
+    *returnSize = 0;
+    int sLen = strlen(s);
+    if (sLen == 0 || wordsSize == 0) return NULL;
+
+    int wordLen = strlen(words[0]);
+    int totalWordsLen = wordsSize * wordLen;
+    if (sLen < totalWordsLen) return NULL;
+
+   
+    WordMap* rawWords = (WordMap*)malloc(wordsSize * sizeof(WordMap));
+    for (int i = 0; i < wordsSize; i++) {
+        strcpy(rawWords[i].word, words[i]);
+    }
+    qsort(rawWords, wordsSize, sizeof(WordMap), compareStrings);
+
+ 
+    WordMap* uniqueWords = (WordMap*)malloc(wordsSize * sizeof(WordMap));
+    int uniqueCount = 0;
+    int* targetCounts = (int*)calloc(wordsSize, sizeof(int)); 
+
+    for (int i = 0; i < wordsSize; i++) {
+        if (i == 0 || strcmp(rawWords[i].word, rawWords[i - 1].word) != 0) {
+            strcpy(uniqueWords[uniqueCount].word, rawWords[i].word);
+            uniqueWords[uniqueCount].id = uniqueCount;
+            targetCounts[uniqueCount] = 1;
+            uniqueCount++;
+        } else {
+            targetCounts[uniqueCount - 1]++;
+        }
+    }
+    free(rawWords);
+
+    
+    int* result = (int*)malloc(sLen * sizeof(int));
+    int* currentCounts = (int*)malloc(uniqueCount * sizeof(int));
+
+
+    for (int i = 0; i < wordLen; i++) {
+        int left = i;
+        int count = 0;
+        memset(currentCounts, 0, uniqueCount * sizeof(int));
+
+        for (int right = i; right + wordLen <= sLen; right += wordLen) {
+            int wordId = getWordId(s, right, wordLen, uniqueWords, uniqueCount);
+
+            if (wordId != -1) {
+                currentCounts[wordId]++;
+                count++;
+
+               
+                while (currentCounts[wordId] > targetCounts[wordId]) {
+                    int leftWordId = getWordId(s, left, wordLen, uniqueWords, uniqueCount);
+                    currentCounts[leftWordId]--;
+                    count--;
+                    left += wordLen;
+                }
+
+                
+                if (count == wordsSize) {
+                    result[(*returnSize)++] = left;
+                }
+            } else {
+                memset(currentCounts, 0, uniqueCount * sizeof(int));
+                count = 0;
+                left = right + wordLen;
+            }
+        }
+    }
+    free(uniqueWords);
+    free(targetCounts);
+    free(currentCounts);
+    return result;
+}
