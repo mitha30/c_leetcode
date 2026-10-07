@@ -1,0 +1,30 @@
+#include <stdio.h>
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+void reverse(int* nums, int start, int end) {
+    while (start < end) {
+        swap(&nums[start], &nums[end]);
+        start++;
+        end--;
+    }
+}
+
+void nextPermutation(int* nums, int numsSize) {
+    if (numsSize <= 1) return;
+    int pivot = numsSize - 2;
+    while (pivot >= 0 && nums[pivot] >= nums[pivot + 1]) {
+        pivot--;
+    }
+    if (pivot >= 0) {
+        int j = numsSize - 1;
+        while (nums[j] <= nums[pivot]) {
+            j--;
+        }
+        
+        swap(&nums[pivot], &nums[j]);
+    }
+    reverse(nums, pivot + 1, numsSize - 1);
+}
